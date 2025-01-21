@@ -3,7 +3,7 @@ services:
     name: trip-planner-api
     env: node
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: node src/index.js
     nodeVersion: 18
     envVars:
       - key: SUPABASE_URL
