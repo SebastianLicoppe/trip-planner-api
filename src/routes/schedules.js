@@ -30,6 +30,7 @@ router.post('/', async (req, res) => {
 router.get('/trips/:tripId', async (req, res) => {
   try {
     const { tripId } = req.params;
+    console.log('Fetching activities for trip:', tripId);
     
     const { data, error } = await supabase
       .from('scheduled_activities')
@@ -37,12 +38,21 @@ router.get('/trips/:tripId', async (req, res) => {
         *,
         activities (*)
       `)
-      .eq('trip_id', tripId);
+      .eq('trip_id', tripId.toString()); // Convert to string
 
-    if (error) throw error;
-    res.json(data);
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
+
+    console.log('Found activities:', data?.length || 0);
+    res.json(data || []);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Full error:', error);
+    res.status(500).json({ 
+      error: error.message,
+      details: error.details || 'No additional details'
+    });
   }
 });
 
