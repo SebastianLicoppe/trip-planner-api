@@ -55,22 +55,25 @@ router.post('/', async (req, res) => {
 });
 
 // Get single trip with all related data
-router.get('/:tripId', async (req, res) => {
+router.get('/trips/:tripId', async (req, res) => {
   try {
-    const { data: trip, error: tripError } = await supabase
-      .from('trips')
+    const { tripId } = req.params;
+    
+    const { data, error } = await supabase
+      .from('scheduled_activities')
       .select(`
         *,
-        destinations (*),
-        activities (*),
-        scheduled_activities (*)
+        activities (*)
       `)
-      .eq('id', req.params.tripId)
-      .single();
+      .eq('trip_id', tripId);
 
-    if (tripError) throw tripError;
-    res.json(trip);
+    if (error) throw error;
+    
+    // If no data found, return empty array instead of error
+    res.json(data || []);
+    
   } catch (error) {
+    console.error('Error fetching schedules:', error);
     res.status(500).json({ error: error.message });
   }
 });
