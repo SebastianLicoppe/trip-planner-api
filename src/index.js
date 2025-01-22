@@ -10,7 +10,6 @@ const activityRoutes = require('./routes/activities');
 const scheduleRoutes = require('./routes/schedules');
 const destinationRoutes = require('./routes/destinations');
 
-
 // Initialize express
 const app = express();
 
