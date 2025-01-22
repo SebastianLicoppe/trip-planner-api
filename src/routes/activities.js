@@ -40,4 +40,25 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Add new GET route to fetch activities by trip_id
+router.get('/trips/:tripId', async (req, res) => {
+  try {
+    const { tripId } = req.params;
+    
+    const { data, error } = await supabase
+      .from('activities')
+      .select('*')
+      .eq('trip_id', tripId.toString());
+
+    if (error) throw error;
+    res.json(data || []);
+    
+  } catch (error) {
+    res.status(500).json({ 
+      error: error.message,
+      details: error.details || 'No additional details' 
+    });
+  }
+});
+
 module.exports = router;
