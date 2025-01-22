@@ -5,20 +5,17 @@ const { supabase } = require('../config/supabase');
 router.post('/', async (req, res) => {
   try {
     const { trip_id, activities, destination_id } = req.body;
-    
-    if (!trip_id || !destination_id || !Array.isArray(activities)) {
-      return res.status(400).json({ error: 'Invalid request format' });
-    }
+    console.log('Received activities:', activities);
+    console.log('For destination:', destination_id);
 
-    // Filter activities by destination and map properties
-    const activitiesToInsert = activities.filter(activity => 
-      activity.destination === destination_id || !activity.destination
-    ).map(activity => ({
+    // No filtering, just map all activities to the destination
+    const activitiesToInsert = activities.map(activity => ({
       name: activity.name,
       description: activity.description,
       type: activity.type || 'local',
       trip_id,
-      destination_id
+      destination_id,
+      created_at: new Date().toISOString()
     }));
 
     const { data, error } = await supabase
@@ -30,10 +27,8 @@ router.post('/', async (req, res) => {
     res.json(data);
 
   } catch (error) {
-    res.status(500).json({ 
-      error: error.message,
-      details: error.details || 'No additional details'
-    });
+    console.error('Activity insert error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
