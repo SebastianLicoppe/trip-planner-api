@@ -8,6 +8,8 @@ require('dotenv').config();
 const tripRoutes = require('./routes/trips');
 const activityRoutes = require('./routes/activities');
 const scheduleRoutes = require('./routes/schedules');
+const destinationRoutes = require('./routes/destinations');
+
 
 // Initialize express
 const app = express();
@@ -32,6 +34,7 @@ app.get('/health', (req, res) => {
 app.use('/api/trips', tripRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/schedules', scheduleRoutes);
+app.use('/api/destinations', destinationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
