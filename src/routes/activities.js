@@ -2,61 +2,64 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
 
-// Example payload structure
-const activitiesExample = {
-  "destination_id": "uuid-here",
-  "trip_id": "uuid-here",
-  "activities": [
-    {
-      "name": "Eiffel Tower Visit",
-      "description": "Visit the iconic tower",
-      "type": "iconic"
-    },
-    {
-      "name": "Local Market Tour",
-      "description": "Explore local markets",
-      "type": "local"
-    }
-  ]
-};
-
 router.post('/', async (req, res) => {
   try {
-    const activitiesWithIds = req.body.activities.map(activity => ({
-      ...activity,
-      trip_id: req.body.trip_id,
-      destination_id: req.body.destination_id
+    const { trip_id, activities, destination_id } = req.body;
+    
+    if (!trip_id || !destination_id || !Array.isArray(activities)) {
+      return res.status(400).json({ error: 'Invalid request format' });
+    }
+
+    // Filter activities by destination and map properties
+    const activitiesToInsert = activities.filter(activity => 
+      activity.destination === destination_id || !activity.destination
+    ).map(activity => ({
+      name: activity.name,
+      description: activity.description,
+      type: activity.type || 'local',
+      trip_id,
+      destination_id
     }));
 
     const { data, error } = await supabase
       .from('activities')
-      .insert(activitiesWithIds)
+      .insert(activitiesToInsert)
       .select();
 
     if (error) throw error;
     res.json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
-// Add new GET route to fetch activities by trip_id
-router.get('/trips/:tripId', async (req, res) => {
-  try {
-    const { tripId } = req.params;
-    
-    const { data, error } = await supabase
-      .from('activities')
-      .select('*')
-      .eq('trip_id', tripId.toString());
-
-    if (error) throw error;
-    res.json(data || []);
-    
   } catch (error) {
     res.status(500).json({ 
       error: error.message,
-      details: error.details || 'No additional details' 
+      details: error.details || 'No additional details'
+    });
+  }
+});
+
+router.get('/trips/:tripId', async (req, res) => {
+  try {
+    const { tripId } = req.params;
+    const { destinationId } = req.query;
+
+    let query = supabase
+      .from('activities')
+      .select('*')
+      .eq('trip_id', tripId);
+    
+    if (destinationId) {
+      query = query.eq('destination_id', destinationId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    
+    res.json(data || []);
+
+  } catch (error) {
+    res.status(500).json({
+      error: error.message,
+      details: error.details || 'No additional details'
     });
   }
 });
