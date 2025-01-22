@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
 
-// Example payload structure
+// Example payload structure (keep for reference)
 const scheduleExample = {
   "trip_id": "uuid-here",
   "destination_id": "uuid-here",
@@ -11,12 +11,33 @@ const scheduleExample = {
   "time_slot": "morning"
 };
 
+// Existing POST route
 router.post('/', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('scheduled_activities')
       .insert([req.body])
       .select();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add new GET route to fetch schedules by trip_id
+router.get('/trips/:tripId', async (req, res) => {
+  try {
+    const { tripId } = req.params;
+    
+    const { data, error } = await supabase
+      .from('scheduled_activities')
+      .select(`
+        *,
+        activities (*)
+      `)
+      .eq('trip_id', tripId);
 
     if (error) throw error;
     res.json(data);
