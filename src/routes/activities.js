@@ -5,37 +5,43 @@ const { supabase } = require('../config/supabase');
 router.post('/', async (req, res) => {
   try {
     const { trip_id, activities, destination_id } = req.body;
-    
+
     if (!trip_id || !destination_id || !Array.isArray(activities)) {
       return res.status(400).json({ error: 'Invalid request format' });
     }
 
     // Filter activities by destination and map properties
-    const activitiesToInsert = activities.filter(activity =>
-      activity.destination === destination_id || !activity.destination
-    ).map(activity => ({
-      name: activity.name,
-      description: activity.description,
-      type: activity.type || 'local',
-      trip_id,
-      destination_id,
-      // Add new fields
-      sub_genre: activity.sub_genre,
-      duration: activity.duration,
-      best_time: activity.best_time,
-      insider_tip: activity.insider_tip,
-      location: activity.location,
-      location_details: activity.locationDetails || activity.location_details,
-      small_description: activity.small_description,
-      detailed_description: activity.detailed_description
-    }));
+    const activitiesToInsert = activities
+      .filter(activity => activity.destination === destination_id) // Only include activities for the current destination
+      .map(activity => ({
+        name: activity.name,
+        description: activity.description,
+        type: activity.type || 'local',
+        trip_id,
+        destination_id,
+        sub_genre: activity.sub_genre,
+        duration: activity.duration,
+        best_time: activity.best_time,
+        insider_tip: activity.insider_tip,
+        location: activity.location,
+        location_details: activity.locationDetails || activity.location_details,
+        small_description: activity.small_description,
+        detailed_description: activity.detailed_description
+      }));
+
+    // Log activities to insert
+    console.log('Activities to insert:', JSON.stringify(activitiesToInsert, null, 2));
 
     const { data, error } = await supabase
       .from('activities')
       .insert(activitiesToInsert)
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase insertion error:', error);
+      throw error;
+    }
+
     res.json(data);
 
   } catch (error) {
