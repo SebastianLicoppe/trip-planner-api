@@ -1,54 +1,64 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
-
 router.post('/', async (req, res) => {
   try {
-    const { trip_id, activities, destination_id } = req.body;
+    const tripId = uuidv4();
 
-    if (!trip_id || !destination_id || !Array.isArray(activities)) {
-      return res.status(400).json({ error: 'Invalid request format' });
-    }
+    // 1. Create trip
+    const { data: trip, error: tripError } = await supabase
+      .from('trips')
+      .insert([{ 
+        id: tripId,
+        name: req.body.name 
+      }])
+      .select()
+      .single();
 
-    // Filter activities by destination and map properties
-    const activitiesToInsert = activities
-      .filter(activity => activity.destination === destination_id) // Only include activities for the current destination
-      .map(activity => ({
-        name: activity.name,
-        description: activity.description,
-        type: activity.type || 'local',
-        trip_id,
-        destination_id,
-        sub_genre: activity.sub_genre,
-        duration: activity.duration,
-        best_time: activity.best_time,
-        insider_tip: activity.insider_tip,
-        location: activity.location,
-        location_details: activity.locationDetails || activity.location_details,
-        small_description: activity.small_description,
-        detailed_description: activity.detailed_description
-      }));
+    if (tripError) throw tripError;
+
+    // 2. Create destinations
+    const destinationsWithTripId = req.body.destinations.map(dest => ({
+      ...dest,
+      id: uuidv4(),
+      trip_id: tripId
+    }));
+
+    const { data: destinations, error: destError } = await supabase
+      .from('destinations')
+      .insert(destinationsWithTripId)
+      .select();
+
+    if (destError) throw destError;
+
+    // 3. Create activities for each destination
+    const activitiesToInsert = req.body.destinations.flatMap(dest =>
+      dest.activities.map(activity => ({
+        ...activity,
+        id: uuidv4(),
+        trip_id: tripId,
+        destination_id: dest.id // Associate activity with the destination
+      }))
+    );
 
     // Log activities to insert
     console.log('Activities to insert:', JSON.stringify(activitiesToInsert, null, 2));
 
-    const { data, error } = await supabase
+    const { data: activities, error: activityError } = await supabase
       .from('activities')
       .insert(activitiesToInsert)
       .select();
 
-    if (error) {
-      console.error('Supabase insertion error:', error);
-      throw error;
+    if (activityError) {
+      console.error('Supabase activities insertion error:', activityError);
+      throw activityError;
     }
 
-    res.json(data);
+    res.json({ trip, destinations, activities });
 
   } catch (error) {
-    res.status(500).json({ 
-      error: error.message,
-      details: error.details || 'No additional details'
-    });
+    console.error('Trip creation error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
