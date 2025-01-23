@@ -84,21 +84,6 @@ router.get('/:tripId', async (req, res) => {
   }
 });
 
-router.delete('/:tripId', async (req, res) => {
-  try {
-    const { tripId } = req.params;
- 
-    await supabase.from('scheduled_activities').delete().eq('trip_id', tripId);
-    await supabase.from('activities').delete().eq('trip_id', tripId);
-    await supabase.from('destinations').delete().eq('trip_id', tripId);
-    
-    const { error } = await supabase.from('trips').delete().eq('id', tripId);
-    if (error) throw error;
- 
-    res.status(204).send();
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
- });
+
 
 module.exports = router;
