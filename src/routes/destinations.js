@@ -49,22 +49,14 @@ router.post('/', async (req, res) => {
 router.get('/trip/:tripId', async (req, res) => {
   try {
     const { tripId } = req.params;
-    const { destinationId } = req.query;
-
-    let query = supabase
-      .from('activities')
+    
+    const { data, error } = await supabase
+      .from('destinations')  // Changed from 'activities' to 'destinations'
       .select('*')
       .eq('trip_id', tripId);
     
-    if (destinationId) {
-      query = query.eq('destination_id', destinationId);
-    }
-
-    const { data, error } = await query;
     if (error) throw error;
-    
     res.json(data || []);
-
   } catch (error) {
     res.status(500).json({
       error: error.message,
