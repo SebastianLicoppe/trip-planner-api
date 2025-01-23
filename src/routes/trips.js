@@ -40,6 +40,69 @@ router.post('/', async (req, res) => {
   }
 });
 
+// POST /api/trips/map-activities/:tripId
+router.post('/map-activities/:tripId', async (req, res) => {
+  try {
+    const { tripId } = req.params;
+    const { activities } = req.body;
+
+    // Get destinations for this trip
+    const { data: destinations, error: destError } = await supabase
+      .from('destinations')
+      .select('id, name')
+      .eq('trip_id', tripId);
+
+    if (destError) throw destError;
+
+    // Group activities by city
+    const activitiesByCity = {};
+    activities.forEach(activity => {
+      const city = activity.locationDetails?.city || activity.location;
+      if (!activitiesByCity[city]) {
+        activitiesByCity[city] = [];
+      }
+      activitiesByCity[city].push(activity);
+    });
+
+    const allActivities = [];
+    
+    // Map activities to destinations
+    for (const destination of destinations) {
+      const cityActivities = activitiesByCity[destination.name] || [];
+      
+      const formattedActivities = cityActivities.map(activity => ({
+        id: uuidv4(),
+        trip_id: tripId,
+        destination_id: destination.id,
+        name: activity.title,
+        description: activity.detailed_description,
+        type: activity.genre.toLowerCase(),
+        sub_genre: activity.sub_genre,
+        duration: activity.duration,
+        best_time: activity.best_time,
+        insider_tip: activity.insider_tip,
+        location: activity.location,
+        location_details: activity.locationDetails,
+        small_description: activity.small_description
+      }));
+
+      const { data: inserted, error: activityError } = await supabase
+        .from('activities')
+        .insert(formattedActivities)
+        .select();
+
+      if (activityError) throw activityError;
+      allActivities.push(...inserted);
+    }
+
+    res.json({ activities: allActivities });
+
+  } catch (error) {
+    console.error('Error mapping activities:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 
 // Get all trips
 router.get('/', async (req, res) => {
