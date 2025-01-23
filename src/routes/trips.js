@@ -40,69 +40,67 @@ router.post('/', async (req, res) => {
   }
 });
 
-// POST /api/trips/map-activities/:tripId
 router.post('/map-activities/:tripId', async (req, res) => {
   try {
     const { tripId } = req.params;
     const { activities } = req.body;
-
-    // Get destinations for this trip
+ 
     const { data: destinations, error: destError } = await supabase
-      .from('destinations')
+      .from('destinations') 
       .select('id, name')
       .eq('trip_id', tripId);
-
+ 
     if (destError) throw destError;
-
-    // Group activities by city
-    const activitiesByCity = {};
-    activities.forEach(activity => {
-      const city = activity.locationDetails?.city || activity.location;
-      if (!activitiesByCity[city]) {
-        activitiesByCity[city] = [];
-      }
-      activitiesByCity[city].push(activity);
-    });
-
-    const allActivities = [];
-    
-    // Map activities to destinations
-    for (const destination of destinations) {
-      const cityActivities = activitiesByCity[destination.name] || [];
-      
-      const formattedActivities = cityActivities.map(activity => ({
-        id: uuidv4(),
-        trip_id: tripId,
-        destination_id: destination.id,
-        name: activity.title,
-        description: activity.detailed_description,
-        type: activity.genre.toLowerCase(),
-        sub_genre: activity.sub_genre,
-        duration: activity.duration,
-        best_time: activity.best_time,
-        insider_tip: activity.insider_tip,
-        location: activity.location,
-        location_details: activity.locationDetails,
-        small_description: activity.small_description
-      }));
-
-      const { data: inserted, error: activityError } = await supabase
-        .from('activities')
-        .insert(formattedActivities)
-        .select();
-
-      if (activityError) throw activityError;
-      allActivities.push(...inserted);
+    if (!destinations?.length) {
+      return res.status(404).json({ error: 'No destinations found for trip' });
     }
-
-    res.json({ activities: allActivities });
-
+ 
+    console.log('Destinations:', destinations);
+ 
+    const allActivities = [];
+ 
+    for (const activity of activities) {
+      console.log('Checking activity:', activity.title);
+      console.log('Location:', activity.locationDetails?.city);
+      
+      const matchingDest = destinations.find(dest => {
+        const cityMatch = activity.locationDetails?.city?.toLowerCase().includes(dest.name.toLowerCase());
+        const locationMatch = activity.location?.toLowerCase().includes(dest.name.toLowerCase());
+        console.log('Destination:', dest.name, 'Matches:', cityMatch || locationMatch);
+        return cityMatch || locationMatch;
+      });
+ 
+      if (matchingDest) {
+        allActivities.push({
+          id: uuidv4(),
+          trip_id: tripId,
+          destination_id: matchingDest.id,
+          name: activity.title,
+          description: activity.small_description, // Changed this line
+          type: activity.genre.toLowerCase(),
+          sub_genre: activity.sub_genre,
+          duration: activity.duration,
+          best_time: activity.best_time,
+          insider_tip: activity.insider_tip,
+          location: activity.location,
+          location_details: activity.locationDetails
+        });
+      }
+    }
+ 
+    const { data, error } = await supabase
+      .from('activities')
+      .insert(allActivities)
+      .select();
+ 
+    if (error) throw error;
+    res.json({ activities: data });
+ 
   } catch (error) {
-    console.error('Error mapping activities:', error);
+    console.error('Error:', error);
     res.status(500).json({ error: error.message });
   }
-});
-
+ });
 
 // Get all trips
 router.get('/', async (req, res) => {
