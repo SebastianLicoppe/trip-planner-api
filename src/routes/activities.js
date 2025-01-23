@@ -11,23 +11,14 @@ router.post('/', async (req, res) => {
     }
 
     // Filter activities by destination and map properties
-    const activitiesToInsert = activities.filter(activity =>
+    const activitiesToInsert = activities.filter(activity => 
       activity.destination === destination_id || !activity.destination
     ).map(activity => ({
       name: activity.name,
       description: activity.description,
-      type: activity.genre?.toLowerCase() === 'iconic' ? 'iconic' : 'local',
+      type: activity.type || 'local',
       trip_id,
-      destination_id,
-      // Add new fields
-      sub_genre: activity.sub_genre,
-      duration: activity.duration,
-      best_time: activity.best_time,
-      insider_tip: activity.insider_tip,
-      location: activity.location,
-      location_details: activity.locationDetails || activity.location_details,
-      small_description: activity.small_description,
-      detailed_description: activity.detailed_description
+      destination_id
     }));
 
     const { data, error } = await supabase
