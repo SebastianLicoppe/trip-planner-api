@@ -46,7 +46,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.get('/trips/:tripId', async (req, res) => {
+router.get('/trip/:tripId/activities', async (req, res) => {
   try {
     const { tripId } = req.params;
     const { destinationId } = req.query;
