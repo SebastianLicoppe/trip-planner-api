@@ -16,7 +16,7 @@ router.post('/', async (req, res) => {
     ).map(activity => ({
       name: activity.name,
       description: activity.description,
-      type: activity.type || 'local',
+      type: activity.genre?.toLowerCase() === 'iconic' ? 'iconic' : 'local',
       trip_id,
       destination_id,
       // Add new fields
