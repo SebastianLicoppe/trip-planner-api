@@ -144,6 +144,21 @@ router.get('/:tripId', async (req, res) => {
   }
 });
 
+router.delete('/:tripId', async (req, res) => {
+  try {
+    const { tripId } = req.params;
+    const { error } = await supabase
+      .from('trips')
+      .delete()
+      .eq('id', tripId);
+
+    if (error) throw error;
+    res.json({ message: 'Trip deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 
 
 module.exports = router;
