@@ -7,7 +7,6 @@ const { v4: uuidv4 } = require('uuid');
 router.post('/', async (req, res) => {
   try {
     const tripId = uuidv4();
-    // 1. Create trip
     const { data: trip, error: tripError } = await supabase
       .from('trips')
       .insert([{ 
@@ -19,11 +18,11 @@ router.post('/', async (req, res) => {
 
     if (tripError) throw tripError;
 
-    // 2. Create destinations
     const destinationsWithTripId = req.body.destinations.map(dest => ({
       ...dest,
       id: uuidv4(),
-      trip_id: tripId
+      trip_id: tripId,
+      image_url: dest.image_url // Add this field
     }));
 
     const { data: destinations, error: destError } = await supabase
